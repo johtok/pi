@@ -1,0 +1,22 @@
+{
+  "providers": {
+    "local-qwopus": {
+      // Qwopus 3.6 27B - Qwen3-based thinking model, loaded by lemond on port 8001
+      // Lemond always binds llama-server to 127.0.0.1:8001 — port is stable
+      "name": "Local GPU (Qwopus)",
+      "baseUrl": "http://127.0.0.1:8001/v1",
+      "apiKey": "local",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "qwopus-27b",
+          "name": "Qwopus 3.6 27B",
+          // Thinking model: pi reads reasoning_content field from llama.cpp responses
+          "reasoning": true,
+          "contextWindow": 8192,
+          "maxTokens": 4096
+        }
+      ]
+    }
+  }
+}

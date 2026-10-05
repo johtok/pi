@@ -1,0 +1,41 @@
+# Pi runtime state and credentials
+/auth.json
+/mcp-auth.json
+/trust.json
+/models-store.json
+/crashes.json
+/sessions/
+/npm/
+/git/
+/bin/
+
+# Logs and generated scratch state
+*.log
+*.log.*
+/.cache/
+/cache/
+/tmp/
+/temp/
+*.tmp
+*.temp
+*.cache
+
+# Local environment, dependencies, credentials, keys, and editor leftovers
+.env
+.env.*
+node_modules/
+*.pem
+*.key
+*.p12
+*.pfx
+*.private
+*.secret
+*.token
+*.credentials
+*.bak
+*.backup
+*.orig
+*.lock
+*~
+*.swp
+*.swo
