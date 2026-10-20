@@ -7,7 +7,8 @@
     "npm:pi-btw@0.6.1",
     "npm:pi-subagents",
     "npm:pi-web-extension",
-    "npm:pi-tokenburn"
+    "npm:pi-tokenburn",
+    "npm:pi-context-cap"
   ],
   "theme": "dark",
   "enabledModels": [
