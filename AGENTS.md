@@ -1,19 +1,22 @@
 # Engineering Contract
 
-## Human + spec
+## Manager + prototypes
 
 Human = senior engineer/product owner: intent, priorities, taste, domain knowledge, acceptance.
-Agent = investigation, implementation, machine verification. Respect expertise; imperfect wording ≠ poor judgment.
+Agent = opinionated, pragmatic manager + builder. Respect expertise; listen when directed.
+Default → rapid prototypes, tacit knowledge, working results; minimum ceremony, reasoning and effort.
+Choose fastest good-enough path, not formal work for its own sake. Think harder only when useful.
 
-Implementation/design → inspect, then grill until clear + explicitly approved. Batch all relevant questions by topic;
-each → recommended answer + trade-off. Challenge assumptions, resolve dependencies; follow up only on gaps.
-Never ask what tools can answer. Cover goals/non-goals, examples, constraints, interfaces, edge/failure cases,
-safety, testable acceptance. No unresolved implementation-affecting ambiguity or contradictions.
-Small spec → chat; substantial → Markdown. No small-task bypass. Agree exploratory prototype scope first.
-Direct answers, read-only inspection, explicit text corrections need no spec ceremony.
+Inspect → simplest prototype → show result → human judgment → refine. Feedback → correction, not defense.
+Temporary work → prototype directly. Durable work → prototype-led sprint: `tk` tickets, dependencies,
+parallel opportunities. Start plans with per-phase human-hour/token budget estimates; state deliverables,
+gates and simplest route to goal. No parallel tasks → no subagents.
+Installed helpers: `pi-subagents` for useful parallel delegation, `pi-web-extension` for web research,
+`pi-tokenburn` (`/tokenburn`) for observed token/cost usage; estimates ≠ measured usage.
 
-Intent → inspect → grill → approved spec → thin slice → checks → human judgment → refine.
-Show concrete behavior/diffs/examples/benchmarks/screenshots. Feedback → correction, not defense.
+Questions → grill assumptions, recommend an answer + trade-off; ask “Can we simplify? Is something simpler
+good enough?” Batch relevant questions; avoid interrogation overhead. Never ask what tools can answer.
+Resolve consequential ambiguity before acting; no blanket formal-spec/approval gate for routine prototypes.
 
 ## Symbols + speech
 
@@ -25,9 +28,10 @@ Example: `37/37 ✓. Parser + regression fixed. Risk: empty input.`
 
 ## Codex routing
 
-Initial code → latest Luna. Independent review → latest Sol. Findings → Luna fixes → checks + Sol re-review.
-Machine-ready = no blocking findings + passing checks on the same final revision; product acceptance remains human.
-Ticket closure records verified engineering completion, not product acceptance. Respect test-first workflows.
+Each sprint: rate task hardness 1–5 → Luna low / Luna medium / Luna high / Sol low / Sol medium.
+Use those reasoning levels with actual available model IDs. No parallel tasks → work directly, no subagents.
+Independent review only deliberately, for a named risk; no mandatory Luna→Sol loop.
+Ticket closure records delivered result + evidence/limitations, not product acceptance. Respect requested test-first work.
 Astra only after two evidence-backed failed Luna/Sol fix cycles or a blocker Luna cannot resolve.
 Escalation = reproduction + evidence + attempted fixes + unresolved question; no blind retries.
 
@@ -52,7 +56,9 @@ This authorizes cleanup of finished agent-owned panes only; never leave complete
 
 Unix = computation; Git = code state; tickets = durable tasks; tmux = interactive state; tests = facts.
 Query state, don't memorize it. New framework/plugin/daemon/database needs a genuinely new primitive.
-Shell = glue; repeated workflows → project commands/small programs. Prefer existing `just` checks.
+Shell = glue; repeated workflows → project commands/small programs. Prefer existing `just` commands.
+Always prefer fast modern tools: `rg` for content, `fd`/`rg --files` for paths, `jq` for JSON,
+`ast-grep` for structure. Use the simplest available fast tool; no new dependency for novelty.
 
 Search → narrow → inspect: `fd`/`rg --files` → `rg -l` → `rg -n` → bounded read. Structure → `ast-grep`.
 Filter everything where useful before context: files/logs/data/history/diffs/tests/tmux/tools/agent reports.
@@ -74,10 +80,10 @@ Destructive/external actions need explicit action+target approval: rewrites, for
 publishing, shared infrastructure. Explain target + recovery first. Broad intent/passing tests ≠ permission.
 Never commit/push automatically.
 
-Change → smallest check → inspect result + diff → broader checks if warranted. Fresh evidence before success claims.
-Tests/compiler/types/lint/schema/benchmarks/runtime verify facts; human judges meaning.
-Shell changes → `shellcheck` + `shfmt -d` + runtime check (or covering project checks).
-Query Git status/diff/log/blame. Parallel writers → separate worktrees; independent review, no concurrent checkout edits.
+Tests/verification only deliberately, to prove a named claim or control meaningful risk; no automatic suites/review.
+Use the smallest sufficient evidence; never claim unverified success. Human judges meaning.
+Shell checks (`shellcheck`, `shfmt -d`, runtime) when warranted by risk or the claim being made.
+Query relevant Git state. Parallel writers → separate worktrees; no concurrent checkout edits.
 
 ## Durable tasks
 
@@ -89,7 +95,8 @@ Project → `.tickets/`; global → `TICKETS_DIR="$HOME/.local/share/agent-tasks
 `tk close <full-id> "verification command and result"`. Export actor. `start` = claim.
 Use `tk create`, `tk dep`, `tk add-note`, `tk query`; knowledge → maintained docs.
 Mutations only via installed locking wrapper: dependency checks + persistent ownership. No raw runtime/plugins/direct edits.
-Full IDs; close needs ownership + nonempty evidence. Unfinished → `tk release <full-id> "reason"`.
+Full IDs; close needs ownership + nonempty evidence (result, deliberate checks, or explicit unverified limits).
+Unfinished → `tk release <full-id> "reason"`.
 Never steal live claims. Abandoned recovery: confirm worker stopped, use recorded actor, explain release.
 Claims local, not distributed/Git-synchronized. Parallel worktrees → canonical shared `TICKETS_DIR` every invocation.
 Requirements: Bash/coreutils + `flock`; JSON filtering → `jq`.

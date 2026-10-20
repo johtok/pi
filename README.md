@@ -34,7 +34,20 @@ To update floating packages and reconcile Git packages manually, run from a neut
 PI_CODING_AGENT_DIR="$HOME/git/pi" pi update --extensions --no-approve
 ```
 
-The configured `pi-btw` version is pinned to `0.6.1`. `pi update` without these package flags updates Pi itself and is a separate operation.
+Configured extensions:
+
+- `npm:pi-btw@0.6.1` — side conversations; pinned.
+- `npm:pi-subagents` — delegated and parallel agent workflows.
+- `npm:pi-web-extension` — web search and page retrieval.
+- `npm:pi-tokenburn` — token-usage tooling.
+
+Install a missing package with `pi install <source>`, then `/reload` or restart Pi. Floating packages follow
+`pi update --extensions`; the `pi-btw` pin stays fixed. `pi update` without these package flags updates Pi
+itself and is a separate operation.
+
+`AGENTS.md` defines prototype-first management: simplest good-enough results, phase budgets, durable work
+as `tk` sprints, hardness-based model routing, and parallel agents only when useful. Checks are deliberate,
+not automatic. Prefer fast modern tools (`rg`, `fd`, `jq`, `ast-grep`) over slow broad scans.
 
 Custom resources belong directly in this repository's `extensions/`, `skills/`, `prompts/`, and `themes/` directories. Track your own resources here; reload or restart Pi after changes. Project-local `AGENTS.md` and `.pi/` configuration remain in each project and are not replaced by this user-level directory.
 
