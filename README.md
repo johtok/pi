@@ -43,6 +43,14 @@ Inside Pi:
 
 The supplied settings use OpenAI Codex models with medium thinking and a dark theme. Model access depends on your account; choose your own defaults in `~/.pi/agent/settings.json`.
 
+## Direct implementation
+
+You control the workflow. To have Pi proceed straight to implementation, say:
+
+> Implement directly. Skip planning, specs, tickets, and approval checkpoints. Make reasonable assumptions and finish the change.
+
+"Just build it" or "force implementation" also works. This overrides the harness's default planning and skill workflows for the current task. Pi inspects the relevant code, implements the change, performs necessary checks, and reports the result. It asks only when essential information cannot be inferred or discovered. Tool permissions and authorization for destructive or external actions still apply.
+
 ## What's included
 
 | File | Purpose |

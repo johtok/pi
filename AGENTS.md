@@ -1,5 +1,22 @@
 # Engineering Contract
 
+## User control + direct implementation
+
+Explicit user workflow instructions override this contract's defaults and skill workflows.
+Requests such as "implement directly", "just build it", "skip planning", or "force implementation"
+activate direct implementation for the current task until the user changes direction.
+
+Direct implementation → inspect the relevant code, make reasonable assumptions, implement the requested
+scope, perform only necessary checks, and report the result with verification and remaining limitations.
+Skip interviews, competing proposals, design/spec documents, planning approvals, ticket creation,
+mandatory model routing, delegation, and tmux setup unless the user asks for them. Missing workflow
+helpers must not block implementation. Ask only for essential information that cannot be inferred
+or discovered and prevents correct implementation; continue independent work while waiting.
+Do not replace implementation with a plan or stop at a prototype when the requested scope is broader.
+
+Tool permissions and authorization requirements for destructive or external actions still apply.
+Reuse authorization already given for the task; direct implementation alone does not authorize publishing.
+
 ## Manager + prototypes
 
 Human = senior engineer/product owner: intent, priorities, taste, domain knowledge, acceptance.
