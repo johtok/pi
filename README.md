@@ -64,7 +64,7 @@ You control the workflow. To have Pi proceed straight to implementation, say:
 
 | Package | Purpose |
 | --- | --- |
-| `pi-btw@0.6.1` | Side conversations. Pinned to this version. |
+| `pi-btw` | Side conversations. |
 | `pi-subagents` | Delegated and parallel agent workflows. |
 | `pi-web-extension` | Web search and page retrieval. |
 | `pi-tokenburn` | Token and cost tracking. |
@@ -86,10 +86,10 @@ Update floating extensions:
 pi update --extensions
 ```
 
-Bootstrap explicitly installs each configured package before updating extensions, so it also restores missing pinned packages. Extension updates alone skip pinned sources such as `pi-btw@0.6.1`. To restore that package manually:
+Bootstrap explicitly installs each configured package before updating extensions, restoring missing packages. All bundled extensions follow their latest versions. To reinstall the side-conversation extension manually:
 
 ```bash
-pi install npm:pi-btw@0.6.1
+pi install npm:pi-btw
 ```
 
 Edit your installed settings in `~/.pi/agent`. Add your own resources under `extensions/`, `skills/`, `prompts/`, or `themes/`, and run `/reload` or restart Pi after changing resources. Project instructions belong in that project's `AGENTS.md` and `.pi/` directory.

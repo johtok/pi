@@ -4,7 +4,7 @@
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
   "packages": [
-    "npm:pi-btw@0.6.1",
+    "npm:pi-btw",
     "npm:pi-subagents",
     "npm:pi-web-extension",
     "npm:pi-tokenburn",
