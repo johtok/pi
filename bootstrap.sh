@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 die() {
 	printf 'bootstrap: %s\n' "$*" >&2
@@ -7,14 +8,19 @@ die() {
 }
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P) || die 'cannot resolve repository directory'
+agent_dir=${HOME:?HOME must be set}/.pi/agent
 
-[[ ${SHELL-} == */bash ]] || die 'Bash is required; set up PI_CODING_AGENT_DIR manually for another shell.'
-command -v bash >/dev/null 2>&1 || die 'Bash is required.'
-command -v git >/dev/null 2>&1 || die 'git is required.'
-command -v grep >/dev/null 2>&1 || die 'grep is required.'
-command -v od >/dev/null 2>&1 || die 'od is required.'
 command -v node >/dev/null 2>&1 || die 'Node.js is required to read settings.json safely.'
-command -v pi >/dev/null 2>&1 || die 'Pi must already be installed; install it with your package manager first.'
+command -v pi >/dev/null 2>&1 || die 'Pi must already be installed; see https://pi.dev for installation.'
+
+if [[ -n ${PI_CODING_AGENT_DIR-} && $PI_CODING_AGENT_DIR != "$agent_dir" ]]; then
+	die 'PI_CODING_AGENT_DIR points elsewhere. Remove the old export from your shell configuration and run unset PI_CODING_AGENT_DIR before installing into ~/.pi/agent.'
+fi
+
+for file in AGENTS.md settings.json models.json; do
+	[[ -f $repo_dir/$file ]] || die "missing harness file: $file"
+	[[ ! -L $agent_dir/$file && (! -e $agent_dir/$file || -f $agent_dir/$file) ]] || die "$agent_dir/$file must be a regular file, not a symlink or special file."
+done
 
 if ! package_sources=$(
 	node - "$repo_dir/settings.json" <<'NODE'
@@ -42,99 +48,35 @@ NODE
 	die 'cannot read valid package entries from settings.json.'
 fi
 
-home=${HOME:?HOME must be set}
-rc=$home/.bashrc
-if [[ -L $rc || (-e $rc && ! -f $rc) ]]; then
-	die "$rc must be a regular file, not a symlink or special file."
-fi
-
-login_profile=
-for candidate in "$home/.bash_profile" "$home/.bash_login" "$home/.profile"; do
-	if [[ -e $candidate || -L $candidate ]]; then
-		[[ ! -L $candidate && -f $candidate ]] || die "$candidate must be a regular file, not a symlink or special file."
-		login_profile=$candidate
-		break
-	fi
-done
-
-if [[ -n $login_profile ]]; then
-	if ! profile_hex=$(LC_ALL=C od -An -v -tx1 "$login_profile"); then
-		die "cannot inspect effective login profile $login_profile"
-	fi
-	if [[ $profile_hex =~ (^|[[:space:]])00([[:space:]]|$) ]]; then
-		die "$login_profile:1 contains a NUL byte; supported login profiles use plain text lines. See README.md for supported forms and manual setup."
-	fi
-	if LC_ALL=C grep -F $'\r' "$login_profile" >/dev/null; then
-		die "$login_profile:1 contains a carriage return; supported login profiles use plain text lines. See README.md for manual setup."
-	fi
-	source_count=0
-	line_number=0
-	# Keep expansion literals in the anchored ERE; never evaluate profile text.
-	# shellcheck disable=SC2016
-	path_export_re='^export[[:blank:]]+PATH="([A-Za-z0-9_./: +,-]|\$HOME|\$PATH|\$\{HOME\}|\$\{PATH\})*"$'
-	# shellcheck disable=SC2016
-	source_dot_home='. "$HOME/.bashrc"'
-	# shellcheck disable=SC2016
-	source_keyword_home='source "$HOME/.bashrc"'
-	while IFS= read -r line || [[ -n $line ]]; do
-		((line_number += 1))
-		line=${line#"${line%%[!$' \t']*}"}
-		line=${line%"${line##*[!$' \t']}"}
-		[[ -z $line || $line == \#* ]] && continue
-		case $line in
-		"$source_dot_home" | '. ~/.bashrc' | "$source_keyword_home" | 'source ~/.bashrc' | \
-			'[[ -f ~/.bashrc ]] && . ~/.bashrc' | 'if [ -f ~/.bashrc ]; then . ~/.bashrc; fi')
-			((source_count += 1))
-			;;
-		*)
-			[[ $line =~ $path_export_re ]] && continue
-			die "$login_profile:$line_number is not a supported complete startup line. Supported forms are direct . or source of ~/.bashrc, the exact guarded forms, comments, blanks, and safe double-quoted PATH exports. See README.md; adding a source line does not repair other unsupported syntax."
-			;;
-		esac
-	done <"$login_profile"
-	if ((source_count != 1)); then
-		line_number=$((line_number > 0 ? line_number : 1))
-		die "$login_profile:$line_number must contain exactly one supported ~/.bashrc source (found $source_count). See README.md for supported forms and manual PI_CODING_AGENT_DIR setup."
-	fi
-fi
-
-export_line="export PI_CODING_AGENT_DIR=$(printf '%q' "$repo_dir")"
-if [[ ${PI_CODING_AGENT_DIR+x} ]] && [[ $PI_CODING_AGENT_DIR != "$repo_dir" ]]; then
-	die 'PI_CODING_AGENT_DIR is already set to a different directory; resolve it before continuing.'
-fi
-
-for config_file in "$rc" ${login_profile:+"$login_profile"}; do
-	[[ -f $config_file ]] || continue
-	while IFS= read -r line || [[ -n $line ]]; do
-		[[ $line =~ ^[[:space:]]*# ]] && continue
-		if [[ $line == *PI_CODING_AGENT_DIR* ]]; then
-			[[ $line == "$export_line" ]] || die "conflicting or ambiguous PI_CODING_AGENT_DIR reference in $config_file; resolve it before continuing."
+mkdir -p -- "$agent_dir"
+agent_dir=$(cd -- "$agent_dir" && pwd -P)
+backup_dir=
+for file in AGENTS.md settings.json models.json; do
+	cmp -s -- "$repo_dir/$file" "$agent_dir/$file" && continue
+	if [[ -e $agent_dir/$file ]]; then
+		if [[ -z $backup_dir ]]; then
+			mkdir -p -- "$agent_dir/backups"
+			backup_dir=$(mktemp -d "$agent_dir/backups/harness.XXXXXXXX")
+			printf 'Existing configuration backed up to %s\n' "$backup_dir"
 		fi
-	done <"$config_file"
+		cp -p -- "$agent_dir/$file" "$backup_dir/$file"
+	fi
 done
 
-# Pi derives project config from cwd. Explicit installs restore declared packages, including pinned npm sources.
+for file in AGENTS.md settings.json models.json; do
+	cmp -s -- "$repo_dir/$file" "$agent_dir/$file" && continue
+	cp -- "$repo_dir/$file" "$agent_dir/$file"
+done
+
+# Use the global agent directory as cwd so a caller's project config is not changed.
+# Explicit installs restore pinned npm sources that extension updates skip.
 if [[ -n $package_sources ]]; then
 	while IFS= read -r source; do
 		[[ -n $source ]] || continue
-		(cd -- "$repo_dir" && PI_CODING_AGENT_DIR="$repo_dir" pi install "$source" --no-approve)
+		(cd -- "$agent_dir" && PI_CODING_AGENT_DIR="$agent_dir" pi install "$source" --no-approve)
 	done <<<"$package_sources"
 fi
-(cd -- "$repo_dir" && PI_CODING_AGENT_DIR="$repo_dir" pi update --extensions --no-approve)
+(cd -- "$agent_dir" && PI_CODING_AGENT_DIR="$agent_dir" pi update --extensions --no-approve)
 
-if [[ ! -e $rc ]]; then
-	(umask 077 && : >"$rc") || die "cannot create $rc"
-fi
-if ! grep -Fqx -- "$export_line" "$rc"; then
-	printf '\n# Pi native agent directory\n%s\n' "$export_line" >>"$rc" || die "cannot update $rc"
-fi
-
-if [[ -z $login_profile ]]; then
-	login_profile=$home/.bash_profile
-	(umask 077 && printf "# Load interactive Bash configuration for login shells.\n. \"\$HOME/.bashrc\"\n" >"$login_profile") || die "cannot create $login_profile"
-fi
-
-printf 'Pi bootstrap complete.\n'
-printf 'Authenticate interactively with: pi\nThen run /login for each provider that needs credentials.\n'
-printf 'Shared ~/.agents/skills are not included in this repository; skills that depend on them will be unavailable on a fresh clone. Omarchy system skills are machine-specific too.\n'
-printf 'Restart or reload your shell to apply PI_CODING_AGENT_DIR; this script cannot change its parent shell environment.\n'
+printf 'Pi harness installed in %s\n' "$agent_dir"
+printf 'Start pi from your project and run /login to authenticate, then /model to choose a model.\n'

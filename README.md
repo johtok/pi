@@ -1,58 +1,109 @@
-# Pi agent directory
+# Pi harness
 
-This repository is the Pi runtime directory itself: `PI_CODING_AGENT_DIR` points here, and Pi reads `settings.json`, `models.json`, instructions, and custom resources directly from this repo. Pi must already be installed (tested with Pi 1.0.2); Node.js 22.19 or newer is required.
+My configuration for [Pi](https://pi.dev): engineering instructions, model settings, and extensions for delegated work, web research, and usage tracking.
 
-## Fresh machine
+The harness installs into Pi's standard `~/.pi/agent` directory. Start `pi` from any project to use it.
 
-Clone to the expected path and bootstrap from Bash:
+## Install
 
-```bash
-git clone <repo-url> "$HOME/git/pi"
-"$HOME/git/pi/bootstrap.sh"
-```
-
-Open a new Bash shell, or set it in the current one with `export PI_CODING_AGENT_DIR="$HOME/git/pi"`. Start `pi`, then run `/login` to authenticate the OpenAI provider and any others you use. OpenAI OAuth needs interactive authentication on each new machine.
-
-Bootstrap reads plain JSON from `settings.json`, explicitly installs every declared package (including pinned npm packages), then reconciles floating package updates. It checks the effective login profile and `.bashrc` without executing either file, and adds the exact `PI_CODING_AGENT_DIR` export to `.bashrc`. The effective login profile must contain exactly one supported complete source statement: `. "$HOME/.bashrc"`, `. ~/.bashrc`, `source` equivalents, `[[ -f ~/.bashrc ]] && . ~/.bashrc`, or `if [ -f ~/.bashrc ]; then . ~/.bashrc; fi`. Blank lines, full-line comments, and safe double-quoted `PATH` exports are also accepted. The PATH form permits literal path characters and `$HOME`, `$PATH`, `${HOME}`, or `${PATH}` references; it rejects substitutions, escapes, operators, extra assignments, and inline comments.
-
-This is a deliberately conservative line grammar, not a Bash parser. Other valid profiles, including profiles with functions, commands, multiline syntax, or additional assignments, are refused with a filename and line number before package updates or writes. Adding a `.bashrc` source line does not make otherwise unsupported syntax safe. To proceed, manually arrange for the existing login startup flow to load `.bashrc` and set `PI_CODING_AGENT_DIR` to this repository path (for example, `export PI_CODING_AGENT_DIR="$HOME/git/pi"` in `.bashrc`), then omit bootstrap or simplify the profile to the supported forms. The validator checks profile structure only; it cannot prove that arbitrary commands inside `.bashrc` will reach the appended export. Bootstrap never executes either profile. It never installs Pi or copies credentials.
-
-## Configuration and runtime state
-
-Configuration lives directly in this directory. Review Git state before adding files:
-
-- Tracked candidates: `AGENTS.md`, `settings.json`, `models.json`, global instructions, and custom `extensions/`, `skills/`, `prompts/`, and `themes/` resources.
-- Locally ignored runtime/private state: `auth.json`, `mcp-auth.json`, trust data, model store, crash reports, sessions, package installs, Git package clones, managed tool binaries, logs, scratch files, dependencies, and `.env` / `.env.*` files. There is no `.env.example` exemption.
-
-Never copy `auth.json` or `mcp-auth.json` from Git or another machine. They belong in this runtime directory and remain locally ignored.
-
-`settings.json` must be plain JSON (no comments) and its `packages` value must be an array of source strings or objects with a `source` string. Object resource filters remain in effect through Pi's native install matching. Bootstrap explicitly installs each listed source; `pi update --extensions` updates floating npm packages and reconciles Git packages, but skips pinned npm packages, including missing pinned installs. To restore packages after changing a pin, rerun bootstrap or install the selected source directly with `pi install`.
-
-To update floating packages and reconcile Git packages manually, run from a neutral directory or this repository:
+On macOS or Linux, install Pi with its [official installer](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/README.md#getting-started):
 
 ```bash
-PI_CODING_AGENT_DIR="$HOME/git/pi" pi update --extensions --no-approve
+curl -fsSL https://pi.dev/install.sh | sh
 ```
 
-Configured extensions:
+Open a new terminal and check that `pi` is on your `PATH`. Pi needs Node.js 22.19 or newer; its installer can install Node.js if needed. Applying this harness also requires Git and Bash.
 
-- `npm:pi-btw@0.6.1` — side conversations; pinned.
-- `npm:pi-subagents` — delegated and parallel agent workflows.
-- `npm:pi-web-extension` — web search and page retrieval.
-- `npm:pi-tokenburn` — token-usage tooling.
+Clone the harness into a temporary directory and apply it:
 
-Install a missing package with `pi install <source>`, then `/reload` or restart Pi. Floating packages follow
-`pi update --extensions`; the `pi-btw` pin stays fixed. `pi update` without these package flags updates Pi
-itself and is a separate operation.
+```bash
+harness_checkout=$(mktemp -d)
+git clone https://github.com/johtok/pi.git "$harness_checkout"
+bash "$harness_checkout/bootstrap.sh"
+```
 
-`AGENTS.md` defines prototype-first management: simplest good-enough results, phase budgets, durable work
-as `tk` sprints, hardness-based model routing, and parallel agents only when useful. Checks are deliberate,
-not automatic. Prefer fast modern tools (`rg`, `fd`, `jq`, `ast-grep`) over slow broad scans.
+Bootstrap copies `AGENTS.md`, `settings.json`, and `models.json` into `~/.pi/agent`, then installs every extension declared in `settings.json`. Existing files that differ are backed up under `~/.pi/agent/backups/harness.*`; the script prints the backup location. Applying the harness replaces these three files, including your current settings and custom model definitions.
 
-Custom resources belong directly in this repository's `extensions/`, `skills/`, `prompts/`, and `themes/` directories. Track your own resources here; reload or restart Pi after changes. Project-local `AGENTS.md` and `.pi/` configuration remain in each project and are not replaced by this user-level directory.
+The temporary checkout is only needed while applying the harness. Credentials, sessions, and other existing Pi resources stay in their usual directory. Bootstrap does not edit shell startup files.
 
-## Machine-specific dependencies and rollback
+If you already have a checkout, run `bash /path/to/checkout/bootstrap.sh` instead. Its location does not affect where the harness is installed.
 
-Shared `~/.agents/skills` and Omarchy skills are absent by design; their provenance is not established here, so this repository makes no upstream pin claim. The configured `local-qwopus` model requires a separately installed local service at `127.0.0.1:8001`. It is unavailable on a fresh machine unless you install and run that service.
+## First run
 
-To roll back shell wiring, remove only the Pi export line from `.bashrc` and unset `PI_CODING_AGENT_DIR` in any current shell. The old `~/.pi/agent` directory remains untouched. Bootstrap may create `.bash_profile` to source `.bashrc` when no effective login profile exists; it does not overwrite an existing profile.
+```bash
+cd /path/to/your/project
+pi
+```
+
+Inside Pi:
+
+1. Run `/login` to connect your provider.
+2. Run `/model` to select a model available to your account.
+3. Give Pi a task.
+
+The supplied settings use OpenAI Codex models with medium thinking and a dark theme. Model access depends on your account; choose your own defaults in `~/.pi/agent/settings.json`.
+
+## What's included
+
+| File | Purpose |
+| --- | --- |
+| [`AGENTS.md`](AGENTS.md) | Engineering workflow: practical prototypes, deliberate checks, tmux visibility, and delegation when useful. |
+| [`settings.json`](settings.json) | Provider and model preferences, appearance, and extension sources. |
+| [`models.json`](models.json) | An optional local model provider at `http://127.0.0.1:8001/v1`. It needs a separately configured model server. |
+| [`bootstrap.sh`](bootstrap.sh) | Applies the configuration to Pi's default directory and restores the declared extensions. |
+
+### Extensions
+
+| Package | Purpose |
+| --- | --- |
+| `pi-btw@0.6.1` | Side conversations. Pinned to this version. |
+| `pi-subagents` | Delegated and parallel agent workflows. |
+| `pi-web-extension` | Web search and page retrieval. |
+| `pi-tokenburn` | Token and cost tracking. |
+| `pi-context-cap` | Context limit controls. |
+
+The engineering instructions reflect my own workflow. Some refer to tools such as `tmux`, `tk`, and `codex`; install those separately if you want to follow that workflow, or adapt `AGENTS.md`. Shared `~/.agents/skills` and Omarchy resources are machine specific and are not bundled here.
+
+## Update and customize
+
+Update Pi itself:
+
+```bash
+pi update
+```
+
+Update floating extensions:
+
+```bash
+pi update --extensions
+```
+
+Bootstrap explicitly installs each configured package before updating extensions, so it also restores missing pinned packages. Extension updates alone skip pinned sources such as `pi-btw@0.6.1`. To restore that package manually:
+
+```bash
+pi install npm:pi-btw@0.6.1
+```
+
+Edit your installed settings in `~/.pi/agent`. Add your own resources under `extensions/`, `skills/`, `prompts/`, or `themes/`, and run `/reload` or restart Pi after changing resources. Project instructions belong in that project's `AGENTS.md` and `.pi/` directory.
+
+To apply a newer version of this harness, repeat the temporary checkout and bootstrap commands above. This replaces the three managed config files again, with backups; keep any customizations you want to reapply.
+
+## Moving from the old custom directory
+
+Earlier versions pointed `PI_CODING_AGENT_DIR` at a Git checkout. To return to Pi's normal directory:
+
+1. Remove the old `export PI_CODING_AGENT_DIR=...` line from your shell startup configuration.
+2. Run `unset PI_CODING_AGENT_DIR` in your current Bash or Zsh shell, or open a new terminal.
+3. Run the install steps above.
+
+Bootstrap refuses to run while that variable points elsewhere. Sessions and credentials in the old directory are not migrated; they remain there, and you can authenticate again with `/login` in the default installation.
+
+## Privacy and backups
+
+Authentication files, sessions, installed packages, and generated runtime state belong to your local Pi installation. Never commit `auth.json` or `mcp-auth.json`. The repository's `.gitignore` excludes credentials and runtime files.
+
+To undo the configuration change, copy the backed up files from the printed backup directory into `~/.pi/agent`, then restart Pi. Files that did not exist before installation have no backup; remove those individually if needed. Extension installations and updates are separate from configuration backups.
+
+## License
+
+[MIT](LICENSE).
